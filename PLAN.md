@@ -44,11 +44,11 @@
 - [ ] **T0.3** 写最小 sm_75 测试核（一段 `mma.sync .f16 m16n8k16`），`nvcc -arch=sm_75` 编译 + `cuobjdump --list-gpubins` 确认产物含 sm_75 SASS（防 JIT 伪装）。
 - [ ] **验收**：能编出含 sm_75 SASS 的最小 CUDA 程序；上游 `engine-main` 在本地可 `cmake` configure（先不改，确认基线能配）。
 
-### M1 — 构建系统放行 [0.5d]
-- [ ] **T1.1** 根 `CMakeLists.txt` 架构白名单 `^(120a|89)$` → `^(120a|89|75)$`，错误文案同步加 75。
-- [ ] **T1.2** `NINFER_SM89` 宏匹配由 `89|120a` 扩为 `89|120a|75`（让 75 走与 89 相同的"通用内核路径"）。
-- [ ] **T1.3** 核查 `src/CMakeLists.txt`：确认 `nvfp4_w4a4` / `sm120_kv` 的 `else()` stub 对 75 自动生效（不改动，仅验证 stub 可链接不报未定义符号）。
-- [ ] **验收**：`cmake -DCMAKE_CUDA_ARCHITECTURES=75` configure **不** FATAL_ERROR；`ninfer_ops` 目标成功生成（含三元/bf16/w8 通用内核）。
+### M1 — 构建系统放行 [0.5d] ✅ 已完成
+- [x] **T1.1** 根 `CMakeLists.txt` 架构白名单 `^(120a|89)$` → `^(120a|89|75)$`，错误文案同步加 75。→ **已改**（L11 正则 + L13 文案，见 `patches/M1-build-system-sm75.patch`）。
+- [x] **T1.2** `NINFER_SM89` 宏匹配由 `89|120a` 扩为 `89|120a|75`（让 75 走与 89 相同的"通用内核路径"）。→ **已改**（L38，见 patch）。
+- [x] **T1.3** 核查 `src/CMakeLists.txt`：确认 `nvfp4_w4a4` / `sm120_kv` 均 `if(MATCHES "^120")…else()→*_stubs.cpp`（L78-86 / L93-101），sm_75 不匹配 `^120` 自动落 stub，**无需改动**；`w8_sm120` 段（L109-116）对所有架构编译通用 w8 内核，也不限 120。
+- [ ] **验收**：`cmake -DCMAKE_CUDA_ARCHITECTURES=75` configure **不** FATAL_ERROR；`ninfer_ops` 目标成功生成（含三元/bf16/w8 通用内核）。→ *本地无 CUDA toolkit，configure 验证推迟至 T0.2/T0.3 远程 T10 机器。*
 
 ### M2 — 三元 GEMM 内核改写（核心）[3–5d]
 - [ ] **T2.1** `src/ops/common/mma.cuh`：确认/补 FP16 `mma_fp16`（m16n8k16 PTX `mma.sync .f16` 封装）——**唯一必须新写/接线的张量核原语**。

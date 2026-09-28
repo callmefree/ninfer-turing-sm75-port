@@ -1,0 +1,25 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index bfc0259..f4e21f1 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -8,9 +8,9 @@ cmake_minimum_required(VERSION 3.28)
+ if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+   set(CMAKE_CUDA_ARCHITECTURES 120a CACHE STRING "CUDA architectures to build")
+ endif()
+-if(NOT CMAKE_CUDA_ARCHITECTURES MATCHES "^(120a|89)$")
++if(NOT CMAKE_CUDA_ARCHITECTURES MATCHES "^(120a|89|75)$")
+   message(FATAL_ERROR
+-    "NInfer supports CMAKE_CUDA_ARCHITECTURES=120a or 89; got "
++    "NInfer supports CMAKE_CUDA_ARCHITECTURES=120a, 89 or 75; got "
+     "'${CMAKE_CUDA_ARCHITECTURES}'")
+ endif()
+ 
+@@ -35,7 +35,7 @@ endif()
+ # fork-build note: the 4090-windows tree's kernel paths are gated on NINFER_SM89
+ # (device.h kTargetSmCount=128), and 128 SMs equals the RTX 5080, so the 120a build
+ # reuses the same code path while emitting native sm_120a SASS.
+-if(CMAKE_CUDA_ARCHITECTURES MATCHES "89|120a")
++if(CMAKE_CUDA_ARCHITECTURES MATCHES "89|120a|75")
+   add_compile_definitions(NINFER_SM89=1)
+ endif()
+ 
