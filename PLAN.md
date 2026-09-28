@@ -51,13 +51,8 @@
 - [ ] **验收**：`cmake -DCMAKE_CUDA_ARCHITECTURES=75` configure **不** FATAL_ERROR；`ninfer_ops` 目标成功生成（含三元/bf16/w8 通用内核）。→ *本地无 CUDA toolkit，configure 验证推迟至 T0.2/T0.3 远程 T10 机器。*
 
 ### M2 — 三元 GEMM 内核改写（核心）[3–5d]
-- [ ] **T2.1** `src/ops/common/mma.cuh`：确认/补 FP16 `mma_fp16`（m16n8k16 PTX `mma.sync .f16` 封装）——**唯一必须新写/接线的张量核原语**。
-- [ ] **T2.2** `src/ops/linear/ternary/ternary_rowsplit_mma.cuh`（主 MMA，硬编码 bf16）：
-  - `__nv_bfloat16*` staging 数组 → `__half`；
-  - `mma_bf16(...)` → `mma_fp16(...)`；
-  - 解码末端 `__float22bfloat162_rn` → `__float22half2_rn`（fp32→fp16 送 MMA）；
-  - **输出仍可存 bf16**（`__float2bfloat16_rn`，store 不需张量核；下游激活是 bf16，不连带改）；
-  - fp32 累加器不变。
+- [x] **T2.1** `src/ops/common/mma.cuh`：已确认 **`mma_f16`（`m16n8k16 .f16` PTX 封装，L42-49）已存在**，另含 `mma_f16_f16acc`（f16 累加变体）。Turing(sm_75) 原生 fp16 TC，直接复用即可 —— **无需新写任何张量核原语**（PLAN 原判断"唯一必须新写"被推翻，净好消息）。
+- [ ] **T2.2** `src/ops/linear/ternary/ternary_rowsplit_mma.cuh`（主 MMA）— 解码 `ternary_mma_decode_byte` 已用 fp16 magic(`0x6400`=1024.0)，仅末端 L104-105 把 fp16 结果转回 bf16（**去掉该转换**，lo/hi_bits 直接取 `ha`/`hc` 的 fp16 位）；`As`/`Bs` staging 指针类型 `__nv_bfloat16*` → `__half*`；`stage_activation` 加载 `x`(bf16 激活) 时逐元素 `__bfloat162half2` 转 fp16 存入 Bs；MMA 调用 `mma_bf16` → `mma_f16`；输出 `out` 保持 `__float2bfloat16_rn`(bf16，兼容下游)。共享内存字节数不变（fp16/bf16 均 2B），Turing 64KB 上限更安全。
 - [ ] **T2.3** `ternary_rowsplit_mma_wide_t.cuh`（宽瓦片 prefill）：同 T2.2 手法换型。
 - [ ] **T2.4** `ternary_rowsplit_mma_small_t.cuh`（小 T 瓦片 verify/spec）：同 T2.2 换型。
 - [ ] **T2.5** `ternary_rowsplit_mma_s8.cuh`（int8 MMA）：Turing 有 int8 TC，**大概率免改**，仅读码确认 dtype 一致。
