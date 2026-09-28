@@ -1,6 +1,6 @@
 # NInfer 三元内核 → Tesla T10 (sm_75 / Turing) 移植推进计划
 
-> 状态：**规划中** ｜ 负责人：callmefree ｜ 创建：2026-09-28
+> 状态：**M0 进行中** ｜ 负责人：callmefree ｜ 创建：2026-09-28 ｜ 最近更新：2026-09-28
 > 上游基线：`paicat1/Bonsai-27B-NInfer` @ `engine-main`（fork 自 `Ambolio/ninfer-4090-windows` v1.0.8）
 > 目标设备：**Tesla T10 (TU102, sm_75, 16GB)**，宿主 fn36（Debian 12 bookworm / Linux + T10 卡）
 
@@ -39,7 +39,7 @@
 ## 3. 详细 TODO List
 
 ### M0 — 基线与环境 [0.5d]
-- [ ] **T0.1** Fork `paicat1/Bonsai-27B-NInfer`，切 `engine-main`，记录基线 commit SHA（pin 防漂移）。
+- [x] **T0.1** 锁定上游 `paicat1/Bonsai-27B-NInfer` @ `engine-main` 基线 commit **`4c9a4f5`**（2026-09-27，`perf: port sched3 A3 token-grid scheduling (s8/wide prefill)`）；本地浅克隆参考副本 `bonsai-upstream-engine/` 已就位（见 `baseline.md`）。GitHub fork（`callmefree/Bonsai-27B-NInfer`）作为开发分支载体，于 M1 前完成。
 - [ ] **T0.2** 本地配 CUDA 13.x 旁装（与上游同工具链）；fn36/T10 宿主是 Linux/Debian，需 `nvidia-toolkit` + 驱动支持 sm_75 编译。
 - [ ] **T0.3** 写最小 sm_75 测试核（一段 `mma.sync .f16 m16n8k16`），`nvcc -arch=sm_75` 编译 + `cuobjdump --list-gpubins` 确认产物含 sm_75 SASS（防 JIT 伪装）。
 - [ ] **验收**：能编出含 sm_75 SASS 的最小 CUDA 程序；上游 `engine-main` 在本地可 `cmake` configure（先不改，确认基线能配）。
